@@ -1,21 +1,24 @@
 # Build aşaması
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
-WORKDIR /app
+WORKDIR /src
 
-# Projeyi kopyala
+# .csproj dosyasını kopyala
+COPY ["RenartApi/RenartApi.csproj", "RenartApi/"]
+
+# Restore işlemi
+RUN dotnet restore "RenartApi/RenartApi.csproj"
+
+# Tüm dosyaları kopyala
 COPY . .
 
-# Bağımlılıkları restore et ve derle
-RUN dotnet restore "RenartApi/RenartApi.csproj"
-RUN dotnet publish "RenartApi/RenartApi.csproj" -c Release -o out
+# Projeyi publish et
+WORKDIR "/src/RenartApi"
+RUN dotnet publish "RenartApi.csproj" -c Release -o /app/publish
 
 # Runtime aşaması
-FROM mcr.microsoft.com/dotnet/aspnet:6.0
+FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS runtime
 WORKDIR /app
-COPY --from=build /app/out .
+COPY --from=build /app/publish .
 
-# Uygulamanın dış dünyaya açılacağı port
 EXPOSE 80
-
-# Başlangıç komutu
 ENTRYPOINT ["dotnet", "RenartApi.dll"]
